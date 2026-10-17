@@ -290,7 +290,7 @@ def rank_links(query, links):
 # ----------------------------- AI (optional) -------------------------------
 PROVIDERS = {   # provider -> (env var, default model)
     "openai":    ("OPENAI_API_KEY", "gpt-4o-mini"),
-    "gemini":    ("GEMINI_API_KEY", "gemini-2.5-flash"),
+    "gemini":    ("GEMINI_API_KEY", "gemini-3-flash"),
     "groq":      ("GROQ_API_KEY", "llama-3.3-70b-versatile"),
     "anthropic": ("ANTHROPIC_API_KEY", "claude-3-5-haiku-latest"),
 }
