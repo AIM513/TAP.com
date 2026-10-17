@@ -289,10 +289,11 @@ def rank_links(query, links):
 
 # ----------------------------- AI (optional) -------------------------------
 PROVIDERS = {   # provider -> (env var, default model)
-    "openai":    ("OPENAI_API_KEY", "gpt-4o-mini"),
-    "gemini":    ("GEMINI_API_KEY", "gemini-3-flash"),
-    "groq":      ("GROQ_API_KEY", "llama-3.3-70b-versatile"),
-    "anthropic": ("ANTHROPIC_API_KEY", "claude-3-5-haiku-latest"),
+      "nvidia":    ("NVIDIA_API_KEY", "nvidia/nemotron-3.5-super-vl-120b-a12b"),
+      "openai":    ("OPENAI_API_KEY", "gpt-4o-mini"),
+      "gemini":    ("GEMINI_API_KEY", "gemini-3-flash"),
+      "groq":      ("GROQ_API_KEY", "llama-3.3-70b-versatile"),
+      "anthropic": ("ANTHROPIC_API_KEY", "claude-3-5-haiku-latest"),
 }
 
 
@@ -343,17 +344,23 @@ def gemini_model(key):
 
 
 def llm_json(prompt):
+    def llm_json(prompt):
     """Send a prompt to whichever AI is configured and return its JSON answer."""
     name, key = ai_provider()
     if not name:
         return None
     model = os.environ.get("AI_MODEL") or (gemini_model(key) if name == "gemini" else PROVIDERS[name][1])
-    if name in ("openai", "groq"):
-        base = "https://api.openai.com/v1" if name == "openai" else "https://api.groq.com/openai/v1"
+    
+    if name in ("openai", "groq", "nvidia"):
+        base = (
+            "https://api.openai.com/v1" if name == "openai" 
+            else "https://api.groq.com/openai/v1" if name == "groq" 
+            else "https://integrate.api.nvidia.com/v1"
+        )
         r = requests.post(f"{base}/chat/completions", timeout=40,
-                          headers={"Authorization": f"Bearer {key}"},
-                          json={"model": model, "messages": [{"role": "user", "content": prompt}],
-                                "response_format": {"type": "json_object"}, "temperature": 0})
+                         headers={"Authorization": f"Bearer {key}"},
+                         json={"model": model, "messages": [{"role": "user", "content": prompt}],
+                               "response_format": {"type": "json_object"}, "temperature": 0})
         r.raise_for_status()
         text = r.json()["choices"][0]["message"]["content"]
     elif name == "gemini":
@@ -361,20 +368,19 @@ def llm_json(prompt):
         if "2.5-flash" in model:  # skip slow "thinking" so the answer comes back in time
             config["thinkingConfig"] = {"thinkingBudget": 0}
         r = requests.post(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-                          timeout=60, headers={"x-goog-api-key": key},
-                          json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": config})
+                         timeout=60, headers={"x-goog-api-key": key},
+                         json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": config})
         r.raise_for_status()
         text = r.json()["candidates"][0]["content"]["parts"][0]["text"]
     else:  # anthropic
         r = requests.post("https://api.anthropic.com/v1/messages", timeout=40,
-                          headers={"x-api-key": key, "anthropic-version": "2023-06-01"},
-                          json={"model": model, "max_tokens": 1500,
-                                "messages": [{"role": "user", "content": prompt}]})
+                         headers={"x-api-key": key, "anthropic-version": "2023-06-01"},
+                         json={"model": model, "max_tokens": 1500,
+                               "messages": [{"role": "user", "content": prompt}]})
         r.raise_for_status()
         text = r.json()["content"][0]["text"]
     match = re.search(r"\{.*\}", text, re.S)
     return json.loads(match.group(0)) if match else None
-
 
 AI_CANDIDATES = int(os.environ.get("AI_CANDIDATES", 150))
 
