@@ -636,6 +636,8 @@ def ask():
     return jsonify(results=results, source=source, ai_note=ai_note)
 
 
-if __name__ == "__main__":
-    # Debug mode (interactive debugger = runs any code) only when asked: FLASK_DEBUG=1
-    app.run(debug=os.environ.get("FLASK_DEBUG") == "1", port=int(os.environ.get("PORT", 5000)))
+if __name__ == '__main__':
+    # Render assigns a port dynamically via os.environ.get('PORT')
+    port = int(os.environ.get('PORT', 10000))
+    # Bind to 0.0.0.0 so Render can detect the open port externally
+    app.run(host='0.0.0.0', port=port)
