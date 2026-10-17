@@ -344,7 +344,6 @@ def gemini_model(key):
 
 
 def llm_json(prompt):
-    def llm_json(prompt):
     """Send a prompt to whichever AI is configured and return its JSON answer."""
     name, key = ai_provider()
     if not name:
