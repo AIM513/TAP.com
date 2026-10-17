@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TAP.com</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+<style nonce="{{ csp_nonce() }}">
+  .hidden { display:none !important; }
+  .tap-badge {
+    background-color: #2d6a4f;
+    color: #ffffff;
+    padding: 2px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+    display: inline-block;
+    letter-spacing: 0.5px;
+  }
+  select {
+    flex: none;
+    max-width: 160px;
+    border: 1px solid #dfe8e2;
+    border-radius: 13px;
+    outline: 0;
+    background: #fff;
+    color: #17231f;
+    padding: 13px 14px;
+    font: inherit;
+  }
+  .dest-form { margin-top: 14px; }
+  .lang-picker { position: absolute; top: 0; right: 0; }
+  .lang-picker select { max-width: 150px; padding: 9px 12px; }
+</style>
+</head>
+<body>
+<div class="helper-shell">
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+  <div class="lang-picker">
+    <select id="lang" aria-label="Language">
+      <option value="">English</option>
+      <option value="hi">Hindi</option>
+      <option value="bn">Bengali</option>
+      <option value="ta">Tamil</option>
+      <option value="te">Telugu</option>
+      <option value="mr">Marathi</option>
+      <option value="gu">Gujarati</option>
+      <option value="pa">Punjabi</option>
+      <option value="ur">Urdu</option>
+      <option value="es">Spanish</option>
+      <option value="fr">French</option>
+      <option value="de">German</option>
+      <option value="pt">Portuguese</option>
+      <option value="it">Italian</option>
+      <option value="nl">Dutch</option>
+      <option value="ru">Russian</option>
+      <option value="ar">Arabic</option>
+      <option value="zh-CN">Chinese (Simplified)</option>
+      <option value="ja">Japanese</option>
+      <option value="ko">Korean</option>
+    </select>
+  </div>
+  <main class="helper-wrap">
+    <header class="hero">
+        <div>
+        <p class="eyebrow notranslate">TAP.com</p>
+        <h1><span data-i18n="h1">Use any website in</span> <span class="nowrap"><span data-i18n="h1one">one</span> <span class="tap-badge notranslate">TAP</span></span></h1>
+        <p class="sub" data-i18n="sub">Type a website, then tap a big button or say what you want in 1–2 words.</p>
+      </div>
+    </header>
+
+    <section class="search-panel">
+      <form id="siteForm" class="url-form">
+        <label for="url" data-i18n="label_site">Website address</label>
+        <div class="input-row">
+          <input id="url" data-i18n-ph="ph_url" placeholder="e.g. passportindia.gov.in" value="python.org" autocomplete="off">
+          <button class="primary-button" data-i18n="open">Open</button>
+        </div>
+      </form>
+      <div class="chips">
+        <button class="chip" data-url="python.org">python.org</button>
+        <button class="chip" data-url="wikipedia.org">wikipedia.org</button>
+        <button class="chip" data-url="github.com">github.com</button>
+        <button class="chip" data-url="usa.gov">usa.gov</button>
+        <button class="chip" data-url="https://www.passportindia.gov.in/psp">Passport Seva</button>
+      </div>
+      <p id="error" class="error"></p>
+    </section>
+
+    <div id="panel" class="content-stack hidden">
+      <section class="card">
+        <div class="section-heading">
+          <span class="step">1</span>
+          <div><h2 data-i18n="ask_h">What do you want to do?</h2><p data-i18n="ask_p">Type 1–2 words, like apply, status or fees.</p></div>
+        </div>
+        <form id="askForm" class="input-row">
+          <input id="ask" data-i18n-ph="ph_ask" placeholder="e.g. login, pay bill, jobs" aria-label="What do you want to do" autocomplete="off">
+          <button class="primary-button" data-i18n="go">Go</button>
+        </form>
+        <div id="results" class="results"></div>
+        <p id="source" class="source"></p>
+      </section>
+
+      <section class="card">
+        <div class="section-heading">
+          <span class="step">2</span>
+          <div><h2 data-i18n="actions">Main actions</h2><p id="siteTitle" class="site"></p></div>
+        </div>
+        <div id="buttons" class="action-grid"></div>
+        <button id="deeper" class="deep-button hidden"><span data-i18n="deeper">Missing something? Look deeper</span> <span data-i18n="deeper_sub">(takes up to a minute)</span></button>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script nonce="{{ csp_nonce() }}">
+let site = null;
+const $ = id => document.getElementById(id);
+
+// ------------------------- page translation -------------------------------
+// Built-in translations for TAP's own interface. TAP / TAP.com brand text is
+// never translated (marked .notranslate and left out of the dictionary).
+// Destination links are translated through Google Translate via translated();
+// if a site cannot be translated, Google's page offers the original version.
+const EN = {
+  h1: 'Use any website in', h1one: 'one',
+  sub: 'Type a website, then tap a big button or say what you want in 1–2 words.',
+  label_site: 'Website address', ph_url: 'e.g. passportindia.gov.in', open: 'Open',
+  ask_h: 'What do you want to do?', ask_p: 'Type 1–2 words, like apply, status or fees.',
+  ph_ask: 'e.g. login, pay bill, jobs', go: 'Go',
+  actions: 'Main actions',
+  deeper: 'Missing something? Look deeper', deeper_sub: '(takes up to a minute)',
+  reading: 'Reading the website… {s} s (some websites need 1-2 minutes, please wait).',
+  thinking: 'Thinking…', no_actions: 'No clear actions found. Try the box above.',
+  back: 'Back', back_hint: 'Back to main actions', pages: '{n} pages',
+  search_label: 'Search “{q}”', search_hint: 'Search this website',
+  matched_ai: 'Matched with AI', matched_kw: 'Matched by keywords',
+  picked_ai: '(buttons picked by AI)',
+  err_side: "Something went wrong on TAP.com's side (code {c}). Look at the Terminal window for the error.",
+  err_reach: 'Could not reach TAP.com or it took too long. Is "python3 app.py" still running in Terminal?',
+  err_generic: 'Something went wrong. Look at the Terminal window for the error.',
+};
+const I18N = {
+  hi: {h1:'कोई भी वेबसाइट, बस', h1one:'एक', sub:'वेबसाइट का नाम लिखें, फिर बड़ा बटन दबाएँ या 1–2 शब्दों में बताएँ कि क्या चाहिए।',
+    label_site:'वेबसाइट का पता', ph_url:'जैसे passportindia.gov.in', open:'खोलें',
+    ask_h:'आप क्या करना चाहते हैं?', ask_p:'1–2 शब्द लिखें, जैसे apply, status या fees।', ph_ask:'जैसे login, pay bill, jobs', go:'जाएँ',
+    actions:'मुख्य काम', deeper:'कुछ छूट गया? और गहराई से देखें', deeper_sub:'(एक मिनट तक लग सकता है)',
+    reading:'वेबसाइट पढ़ी जा रही है… {s} s (कुछ वेबसाइटों में 1–2 मिनट लगते हैं, कृपया रुकें)।',
+    thinking:'सोचा जा रहा है…', no_actions:'कोई साफ़ काम नहीं मिला। ऊपर के बॉक्स का इस्तेमाल करें।',
+    back:'वापस', back_hint:'मुख्य कामों पर वापस', pages:'{n} पेज', search_label:'“{q}” खोजें', search_hint:'इस वेबसाइट पर खोजें',
+    matched_ai:'AI से मिला', matched_kw:'शब्दों से मिला', picked_ai:'(बटन AI ने चुने)',
+    err_side:'TAP.com की तरफ़ कुछ गड़बड़ हुई (code {c})। गलती Terminal विंडो में देखें।',
+    err_reach:'TAP.com तक पहुँच नहीं पाए या बहुत समय लगा। क्या Terminal में "python3 app.py" चल रहा है?',
+    err_generic:'कुछ गड़बड़ हुई। गलती Terminal विंडो में देखें।'},
+  bn: {h1:'যেকোনো ওয়েবসাইট, মাত্র', h1one:'এক', sub:'ওয়েবসাইটের নাম লিখুন, তারপর বড় বোতাম চাপুন বা ১–২ শব্দে বলুন কী চাই।',
+    label_site:'ওয়েবসাইটের ঠিকানা', ph_url:'যেমন passportindia.gov.in', open:'খুলুন',
+    ask_h:'আপনি কী করতে চান?', ask_p:'১–২ শব্দ লিখুন, যেমন apply, status বা fees।', ph_ask:'যেমন login, pay bill, jobs', go:'যান',
+    actions:'মুখ্য কাজ', deeper:'কিছু পাননি? আরও খুঁজুন', deeper_sub:'(এক মিনিট পর্যন্ত লাগতে পারে)',
+    reading:'ওয়েবসাইট পড়া হচ্ছে… {s} s (কিছু ওয়েবসাইটে ১–২ মিনিট লাগে, অপেক্ষা করুন)।',
+    thinking:'ভাবা হচ্ছে…', no_actions:'কোনো স্পষ্ট কাজ পাওয়া যায়নি। উপরের বাক্সটি ব্যবহার করুন।',
+    back:'পিছনে', back_hint:'মুখ্য কাজে ফিরে যান', pages:'{n} পৃষ্ঠা', search_label:'“{q}” খুঁজুন', search_hint:'এই ওয়েবসাইটে খুঁজুন',
+    matched_ai:'AI দিয়ে মিলেছে', matched_kw:'শব্দ দিয়ে মিলেছে', picked_ai:'(বোতাম AI বেছে নিয়েছে)',
+    err_side:'TAP.com-এর দিকে কিছু ভুল হয়েছে (code {c})। ভুলটি Terminal উইন্ডোতে দেখুন।',
+    err_reach:'TAP.com-এ পৌঁছানো যায়নি বা বেশি সময় লেগেছে। Terminal-এ "python3 app.py" চলছে তো?',
+    err_generic:'কিছু ভুল হয়েছে। ভুলটি Terminal উইন্ডোতে দেখুন।'},
+  ta: {h1:'எந்த வலைப்பக்கமும், வெறும்', h1one:'ஒரு', sub:'வலைப்பக்கத்தை தட்டச்சு செய்து, பெரிய பொத்தானை தட்டவும் அல்லது 1–2 வார்த்தைகளில் சொல்லவும்.',
+    label_site:'வலைப்பக்க முகவரி', ph_url:'எ.கா. passportindia.gov.in', open:'திற',
+    ask_h:'நீங்கள் என்ன செய்ய விரும்புகிறீர்கள்?', ask_p:'1–2 வார்த்தைகள் தட்டச்சு செய்யவும், எ.கா. apply, status அல்லது fees.', ph_ask:'எ.கா. login, pay bill, jobs', go:'செல்',
+    actions:'முக்கிய செயல்கள்', deeper:'ஏதாவது தவறவிட்டீர்களா? ஆழமாகப் பார்க்கவும்', deeper_sub:'(ஒரு நிமிடம் வரை ஆகலாம்)',
+    reading:'வலைப்பக்கம் படிக்கப்படுகிறது… {s} s (சில தளங்கள் 1–2 நிமிடங்கள் ஆகும், காத்திருக்கவும்).',
+    thinking:'யோசிக்கிறது…', no_actions:'தெளிவான செயல்கள் இல்லை. மேலே உள்ள பெட்டியை முயற்சிக்கவும்.',
+    back:'பின்', back_hint:'முக்கிய செயல்களுக்குத் திரும்பு', pages:'{n} பக்கங்கள்', search_label:'“{q}” தேடு', search_hint:'இந்த வலைப்பக்கத்தில் தேடு',
+    matched_ai:'AI மூலம் பொருந்தியது', matched_kw:'வார்த்தைகள் மூலம் பொருந்தியது', picked_ai:'(பொத்தான்களை AI தேர்ந்தது)',
+    err_side:'TAP.com பக்கத்தில் ஏதோ தவறு (code {c}). பிழையை Terminal சாளரத்தில் பார்க்கவும்.',
+    err_reach:'TAP.com-ஐ அடைய முடியவில்லை அல்லது அதிக நேரம் ஆனது. Terminal-இல் "python3 app.py" இன்னும் இயங்குகிறதா?',
+    err_generic:'ஏதோ தவறு நடந்தது. பிழையை Terminal சாளரத்தில் பார்க்கவும்.'},
+  te: {h1:'ఏ వెబ్‌సైట్ అయినా, కేవలం', h1one:'ఒక', sub:'వెబ్‌సైట్ పేరు టైప్ చేసి, పెద్ద బటన్ నొక్కండి లేదా 1–2 పదాల్లో ఏమి కావాలో చెప్పండి.',
+    label_site:'వెబ్‌సైట్ చిరునామా', ph_url:'ఉదా. passportindia.gov.in', open:'తెరవండి',
+    ask_h:'మీరు ఏమి చేయాలనుకుంటున్నారు?', ask_p:'1–2 పదాలు టైప్ చేయండి, ఉదా. apply, status లేదా fees.', ph_ask:'ఉదా. login, pay bill, jobs', go:'వెళ్లండి',
+    actions:'ప్రధాన పనులు', deeper:'ఏదైనా మిస్ అయ్యారా? లోతుగా చూడండి', deeper_sub:'(నిమిషం వరకు పట్టవచ్చు)',
+    reading:'వెబ్‌సైట్ చదవబడుతోంది… {s} s (కొన్ని సైట్లకు 1–2 నిమిషాలు పట్టవచ్చు, దయచేసి వేచి ఉండండి).',
+    thinking:'ఆలోచిస్తోంది…', no_actions:'స్పష్టమైన పనులు కనిపించలేదు. పై బాక్స్ ప్రయత్నించండి.',
+    back:'వెనుకకు', back_hint:'ప్రధాన పనులకు తిరిగి', pages:'{n} పేజీలు', search_label:'“{q}” వెతకండి', search_hint:'ఈ వెబ్‌సైట్‌లో వెతకండి',
+    matched_ai:'AI తో సరిపోయింది', matched_kw:'పదాలతో సరిపోయింది', picked_ai:'(బటన్లను AI ఎంచుకుంది)',
+    err_side:'TAP.com వైపు ఏదో తప్పు జరిగింది (code {c}). లోపం Terminal విండోలో చూడండి.',
+    err_reach:'TAP.com‌ను చేరుకోలేకపోయాం లేదా ఎక్కువ సమయం పట్టింది. Terminal లో "python3 app.py" ఇంకా నడుస్తోందా?',
+    err_generic:'ఏదో తప్పు జరిగింది. లోపం Terminal విండోలో చూడండి.'},
+  mr: {h1:'कोणतीही वेबसाइट, फक्त', h1one:'एक', sub:'वेबसाइट टाइप करा, मग मोठे बटण दाबा किंवा 1–2 शब्दांत काय हवे ते सांगा.',
+    label_site:'वेबसाइटचा पत्ता', ph_url:'उदा. passportindia.gov.in', open:'उघडा',
+    ask_h:'तुम्हाला काय करायचे आहे?', ask_p:'1–2 शब्द टाइप करा, उदा. apply, status किंवा fees.', ph_ask:'उदा. login, pay bill, jobs', go:'जा',
+    actions:'मुख्य कामे', deeper:'काही हवे नाही का? आणखी खोलात पाहा', deeper_sub:'(एक मिनिट लागू शकते)',
+    reading:'वेबसाइट वाचली जात आहे… {s} s (काही वेबसाइट्सना 1–2 मिनिटे लागतात, कृपया थांबा).',
+    thinking:'विचार चालू आहे…', no_actions:'स्पष्ट कामे सापडली नाहीत. वरचे बॉक्स वापरून पाहा.',
+    back:'मागे', back_hint:'मुख्य कामांकडे परत', pages:'{n} पृष्ठे', search_label:'“{q}” शोधा', search_hint:'या वेबसाइटवर शोधा',
+    matched_ai:'AI ने जुळवले', matched_kw:'शब्दांनी जुळवले', picked_ai:'(बटणे AI ने निवडली)',
+    err_side:'TAP.com च्या बाजूने काहीतरी चूक झाली (code {c}). चूक Terminal विंडोमध्ये पाहा.',
+    err_reach:'TAP.com पर्यंत पोहोचता आले नाही किंवा खूप वेळ लागला. Terminal मध्ये "python3 app.py" चालू आहे का?',
+    err_generic:'काहीतरी चूक झाली. चूक Terminal विंडोमध्ये पाहा.'},
+  gu: {h1:'કોઈપણ વેબસાઇટ, ફક્ત', h1one:'એક', sub:'વેબસાઇટ લખો, પછી મોટું બટન દબાવો અથવા 1–2 શબ્દોમાં કહો શું જોઈએ.',
+    label_site:'વેબસાઇટનું સરનામું', ph_url:'દા.ત. passportindia.gov.in', open:'ખોલો',
+    ask_h:'તમે શું કરવા માંગો છો?', ask_p:'1–2 શબ્દો લખો, દા.ત. apply, status કે fees.', ph_ask:'દા.ત. login, pay bill, jobs', go:'જાઓ',
+    actions:'મુખ્ય કામો', deeper:'કંઈ ચૂકાઈ ગયું? ઊંડે સુધી જુઓ', deeper_sub:'(એક મિનિટ સુધી લાગી શકે)',
+    reading:'વેબસાઇટ વંચાઈ રહી છે… {s} s (કેટલીક સાઇટ્સને 1–2 મિનિટ લાગે છે, કૃપા કરી રાહ જુઓ).',
+    thinking:'વિચાર ચાલે છે…', no_actions:'સ્પષ્ટ કામો મળ્યાં નથી. ઉપરનો બોક્સ વાપરો.',
+    back:'પાછળ', back_hint:'મુખ્ય કામો પર પાછા', pages:'{n} પાનાં', search_label:'“{q}” શોધો', search_hint:'આ વેબસાઇટ પર શોધો',
+    matched_ai:'AI વડે મળ્યું', matched_kw:'શબ્દો વડે મળ્યું', picked_ai:'(બટનો AI એ પસંદ કર્યાં)',
+    err_side:'TAP.com તરફથી કંઈક ખોટું થયું (code {c}). ભૂલ Terminal વિંડોમાં જુઓ.',
+    err_reach:'TAP.com સુધી પહોંચી શકાયા નહીં કે ખૂબ સમય લાગ્યો. શું Terminal માં "python3 app.py" ચાલે છે?',
+    err_generic:'કંઈક ખોટું થયું. ભૂલ Terminal વિંડોમાં જુઓ.'},
+  pa: {h1:'ਕੋਈ ਵੀ ਵੈੱਬਸਾਈਟ, ਸਿਰਫ਼', h1one:'ਇੱਕ', sub:'ਵੈੱਬਸਾਈਟ ਲਿਖੋ, ਫਿਰ ਵੱਡਾ ਬਟਨ ਦਬਾਓ ਜਾਂ 1–2 ਸ਼ਬਦਾਂ \'ਚ ਦੱਸੋ ਕੀ ਚਾਹੀਦਾ ਹੈ।',
+    label_site:'ਵੈੱਬਸਾਈਟ ਦਾ ਪਤਾ', ph_url:'ਜਿਵੇਂ passportindia.gov.in', open:'ਖੋਲ੍ਹੋ',
+    ask_h:'ਤੁਸੀਂ ਕੀ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ?', ask_p:'1–2 ਸ਼ਬਦ ਲਿਖੋ, ਜਿਵੇਂ apply, status ਜਾਂ fees।', ph_ask:'ਜਿਵੇਂ login, pay bill, jobs', go:'ਜਾਓ',
+    actions:'ਮੁੱਖ ਕੰਮ', deeper:'ਕੁਝ ਰਹਿ ਗਿਆ? ਹੋਰ ਡੂੰਘਾਈ ਨਾਲ ਵੇਖੋ', deeper_sub:'(ਇੱਕ ਮਿੰਟ ਤੱਕ ਲੱਗ ਸਕਦਾ ਹੈ)',
+    reading:'ਵੈੱਬਸਾਈਟ ਪੜ੍ਹੀ ਜਾ ਰਹੀ ਹੈ… {s} s (ਕੁਝ ਸਾਈਟਾਂ ਨੂੰ 1–2 ਮਿੰਟ ਲੱਗਦੇ ਹਨ, ਉਡੀਕੋ)।',
+    thinking:'ਸੋਚਿਆ ਜਾ ਰਿਹਾ ਹੈ…', no_actions:'ਕੋਈ ਸਾਫ਼ ਕੰਮ ਨਹੀਂ ਮਿਲਿਆ। ਉੱਤੇ ਵਾਲਾ ਬਾਕਸ ਵਰਤੋ।',
+    back:'ਪਿੱਛੇ', back_hint:'ਮੁੱਖ ਕੰਮਾਂ \'ਤੇ ਵਾਪਸ', pages:'{n} ਪੰਨੇ', search_label:'“{q}” ਲੱਭੋ', search_hint:'ਇਸ ਵੈੱਬਸਾਈਟ \'ਤੇ ਲੱਭੋ',
+    matched_ai:'AI ਨਾਲ ਮਿਲਿਆ', matched_kw:'ਸ਼ਬਦਾਂ ਨਾਲ ਮਿਲਿਆ', picked_ai:'(ਬਟਨ AI ਨੇ ਚੁਣੇ)',
+    err_side:'TAP.com ਵੱਲੋਂ ਕੁਝ ਗਲਤ ਹੋਇਆ (code {c})। ਗਲਤੀ Terminal ਵਿੰਡੋ \'ਚ ਵੇਖੋ।',
+    err_reach:'TAP.com ਤੱਕ ਨਹੀਂ ਪਹੁੰਚ ਸਕੇ ਜਾਂ ਬਹੁਤ ਸਮਾਂ ਲੱਗਾ। ਕੀ Terminal \'ਚ "python3 app.py" ਚੱਲ ਰਿਹਾ ਹੈ?',
+    err_generic:'ਕੁਝ ਗਲਤ ਹੋਇਆ। ਗਲਤੀ Terminal ਵਿੰਡੋ \'ਚ ਵੇਖੋ।'},
+  ur: {h1:'کوئی بھی ویب سائٹ، صرف', h1one:'ایک', sub:'ویب سائٹ لکھیں، پھر بڑا بٹن دبائیں یا 1–2 الفاظ میں بتائیں کیا چاہیے۔',
+    label_site:'ویب سائٹ کا پتہ', ph_url:'مثلاً passportindia.gov.in', open:'کھولیں',
+    ask_h:'آپ کیا کرنا چاہتے ہیں؟', ask_p:'1–2 الفاظ لکھیں، جیسے apply، status یا fees۔', ph_ask:'مثلاً login، pay bill، jobs', go:'جائیں',
+    actions:'اہم کام', deeper:'کچھ رہ گیا؟ مزید دیکھیں', deeper_sub:'(ایک منٹ تک لگ سکتا ہے)',
+    reading:'ویب سائٹ پڑھی جا رہی ہے… {s} s (کچھ سائٹس کو 1–2 منٹ لگتے ہیں، برائے مہربانی انتظار کریں)۔',
+    thinking:'سوچا جا رہا ہے…', no_actions:'کوئی واضح کام نہیں ملا۔ اوپر کا خانہ استعمال کریں۔',
+    back:'واپس', back_hint:'اہم کاموں پر واپس', pages:'{n} صفحات', search_label:'“{q}” تلاش کریں', search_hint:'اسی ویب سائٹ پر تلاش کریں',
+    matched_ai:'AI سے ملا', matched_kw:'الفاظ سے ملا', picked_ai:'(بٹن AI نے چنے)',
+    err_side:'TAP.com کی طرف کچھ خرابی ہوئی (code {c})۔ غلطی Terminal ونڈو میں دیکھیں۔',
+    err_reach:'TAP.com تک رسائی نہ ہوئی یا بہت وقت لگا۔ کیا Terminal میں "python3 app.py" چل رہا ہے؟',
+    err_generic:'کچھ خرابی ہوئی۔ غلطی Terminal ونڈو میں دیکھیں۔'},
+  es: {h1:'Usa cualquier web con un', h1one:'solo', sub:'Escribe una web, toca un botón grande o di lo que quieres en 1–2 palabras.',
+    label_site:'Dirección web', ph_url:'p. ej. passportindia.gov.in', open:'Abrir',
+    ask_h:'¿Qué quieres hacer?', ask_p:'Escribe 1–2 palabras, como apply, status o fees.', ph_ask:'p. ej. login, pay bill, jobs', go:'Ir',
+    actions:'Acciones principales', deeper:'¿Falta algo? Busca más a fondo', deeper_sub:'(puede tardar un minuto)',
+    reading:'Leyendo la web… {s} s (algunas webs tardan 1–2 minutos, espera por favor).',
+    thinking:'Pensando…', no_actions:'No se encontraron acciones claras. Prueba el cuadro de arriba.',
+    back:'Atrás', back_hint:'Volver a las acciones principales', pages:'{n} páginas', search_label:'Buscar “{q}”', search_hint:'Buscar en esta web',
+    matched_ai:'Encontrado con IA', matched_kw:'Encontrado por palabras', picked_ai:'(botones elegidos por IA)',
+    err_side:'Algo falló en TAP.com (código {c}). Mira el error en la ventana de Terminal.',
+    err_reach:'No se pudo contactar con TAP.com o tardó demasiado. ¿Sigue "python3 app.py" ejecutándose en Terminal?',
+    err_generic:'Algo falló. Mira el error en la ventana de Terminal.'},
+  fr: {h1:"Utilisez n'importe quel site en un", h1one:'seul', sub:'Tapez un site, touchez un gros bouton ou dites ce que vous voulez en 1–2 mots.',
+    label_site:'Adresse du site', ph_url:'ex. passportindia.gov.in', open:'Ouvrir',
+    ask_h:'Que voulez-vous faire ?', ask_p:'Tapez 1–2 mots, comme apply, status ou fees.', ph_ask:'ex. login, pay bill, jobs', go:'Aller',
+    actions:'Actions principales', deeper:'Il manque quelque chose ? Chercher plus loin', deeper_sub:'(peut prendre une minute)',
+    reading:'Lecture du site… {s} s (certains sites prennent 1–2 minutes, patientez).',
+    thinking:'Réflexion…', no_actions:'Aucune action claire trouvée. Essayez le champ ci-dessus.',
+    back:'Retour', back_hint:'Retour aux actions principales', pages:'{n} pages', search_label:'Rechercher « {q} »', search_hint:'Rechercher sur ce site',
+    matched_ai:"Trouvé avec l'IA", matched_kw:'Trouvé par mots-clés', picked_ai:"(boutons choisis par l'IA)",
+    err_side:"Une erreur s'est produite côté TAP.com (code {c}). Voyez l'erreur dans la fenêtre Terminal.",
+    err_reach:'Impossible de joindre TAP.com ou délai dépassé. « python3 app.py » tourne-t-il encore dans Terminal ?',
+    err_generic:"Une erreur s'est produite. Voyez l'erreur dans la fenêtre Terminal."},
+  de: {h1:'Jede Website mit einem', h1one:'einzigen', sub:'Website eingeben, große Schaltfläche antippen oder in 1–2 Worten sagen, was Sie wollen.',
+    label_site:'Website-Adresse', ph_url:'z. B. passportindia.gov.in', open:'Öffnen',
+    ask_h:'Was möchten Sie tun?', ask_p:'1–2 Wörter eingeben, z. B. apply, status oder fees.', ph_ask:'z. B. login, pay bill, jobs', go:'Los',
+    actions:'Hauptaktionen', deeper:'Etwas fehlt? Genauer suchen', deeper_sub:'(dauert bis zu einer Minute)',
+    reading:'Website wird gelesen… {s} s (manche Websites brauchen 1–2 Minuten, bitte warten).',
+    thinking:'Denkt nach…', no_actions:'Keine klaren Aktionen gefunden. Feld oben ausprobieren.',
+    back:'Zurück', back_hint:'Zurück zu den Hauptaktionen', pages:'{n} Seiten', search_label:'„{q}“ suchen', search_hint:'Auf dieser Website suchen',
+    matched_ai:'Mit KI gefunden', matched_kw:'Per Stichwort gefunden', picked_ai:'(Buttons von der KI gewählt)',
+    err_side:'Auf TAP.com ist etwas schiefgelaufen (Code {c}). Den Fehler sehen Sie im Terminal-Fenster.',
+    err_reach:'TAP.com war nicht erreichbar oder hat zu lange gebraucht. Läuft "python3 app.py" noch im Terminal?',
+    err_generic:'Etwas ist schiefgelaufen. Den Fehler sehen Sie im Terminal-Fenster.'},
+  pt: {h1:'Use qualquer site com um', h1one:'único', sub:'Digite um site, toque num botão grande ou diga o que quer em 1–2 palavras.',
+    label_site:'Endereço do site', ph_url:'ex. passportindia.gov.in', open:'Abrir',
+    ask_h:'O que você quer fazer?', ask_p:'Digite 1–2 palavras, como apply, status ou fees.', ph_ask:'ex. login, pay bill, jobs', go:'Ir',
+    actions:'Ações principais', deeper:'Faltou algo? Procurar mais', deeper_sub:'(pode levar um minuto)',
+    reading:'Lendo o site… {s} s (alguns sites levam 1–2 minutos, aguarde).',
+    thinking:'Pensando…', no_actions:'Nenhuma ação clara encontrada. Tente a caixa acima.',
+    back:'Voltar', back_hint:'Voltar às ações principais', pages:'{n} páginas', search_label:'Pesquisar “{q}”', search_hint:'Pesquisar neste site',
+    matched_ai:'Encontrado com IA', matched_kw:'Encontrado por palavras', picked_ai:'(botões escolhidos por IA)',
+    err_side:'Algo deu errado no TAP.com (código {c}). Veja o erro na janela do Terminal.',
+    err_reach:'Não foi possível chegar ao TAP.com ou demorou demais. O "python3 app.py" ainda está rodando no Terminal?',
+    err_generic:'Algo deu errado. Veja o erro na janela do Terminal.'},
+  it: {h1:'Usa qualsiasi sito con un', h1one:'solo', sub:"Scrivi un sito, tocca un pulsante grande o di' cosa vuoi in 1–2 parole.",
+    label_site:'Indirizzo del sito', ph_url:'es. passportindia.gov.in', open:'Apri',
+    ask_h:'Cosa vuoi fare?', ask_p:'Scrivi 1–2 parole, come apply, status o fees.', ph_ask:'es. login, pay bill, jobs', go:'Vai',
+    actions:'Azioni principali', deeper:'Manca qualcosa? Cerca più a fondo', deeper_sub:'(può richiedere un minuto)',
+    reading:'Lettura del sito… {s} s (alcuni siti richiedono 1–2 minuti, attendi).',
+    thinking:'Sto pensando…', no_actions:'Nessuna azione chiara trovata. Prova il campo sopra.',
+    back:'Indietro', back_hint:'Torna alle azioni principali', pages:'{n} pagine', search_label:'Cerca “{q}”', search_hint:'Cerca in questo sito',
+    matched_ai:"Trovato con l'IA", matched_kw:'Trovato per parole', picked_ai:"(pulsanti scelti dall'IA)",
+    err_side:'Qualcosa è andato storto su TAP.com (codice {c}). Guarda l\'errore nella finestra del Terminale.',
+    err_reach:'Impossibile raggiungere TAP.com o troppo lento. "python3 app.py" è ancora in esecuzione nel Terminale?',
+    err_generic:'Qualcosa è andato storto. Guarda l\'errore nella finestra del Terminale.'},
+  nl: {h1:'Gebruik elke website met', h1one:'één', sub:'Typ een website, tik op een grote knop of zeg in 1–2 woorden wat je wilt.',
+    label_site:'Websiteadres', ph_url:'bijv. passportindia.gov.in', open:'Openen',
+    ask_h:'Wat wil je doen?', ask_p:'Typ 1–2 woorden, zoals apply, status of fees.', ph_ask:'bijv. login, pay bill, jobs', go:'Ga',
+    actions:'Hoofdacties', deeper:'Mis je iets? Dieper zoeken', deeper_sub:'(kan een minuut duren)',
+    reading:'Website wordt gelezen… {s} s (sommige sites duren 1–2 minuten, even geduld).',
+    thinking:'Denkt na…', no_actions:'Geen duidelijke acties gevonden. Probeer het veld hierboven.',
+    back:'Terug', back_hint:'Terug naar hoofdacties', pages:"{n} pagina's", search_label:'Zoek “{q}”', search_hint:'Zoek op deze website',
+    matched_ai:'Gevonden met AI', matched_kw:'Gevonden op trefwoorden', picked_ai:'(knoppen gekozen door AI)',
+    err_side:'Er ging iets mis aan de kant van TAP.com (code {c}). Bekijk de fout in het Terminal-venster.',
+    err_reach:'Kon TAP.com niet bereiken of het duurde te lang. Draait "python3 app.py" nog in Terminal?',
+    err_generic:'Er ging iets mis. Bekijk de fout in het Terminal-venster.'},
+  ru: {h1:'Любой сайт — в', h1one:'один', sub:'Введите сайт, нажмите большую кнопку или напишите, что нужно, в 1–2 словах.',
+    label_site:'Адрес сайта', ph_url:'напр. passportindia.gov.in', open:'Открыть',
+    ask_h:'Что вы хотите сделать?', ask_p:'Напишите 1–2 слова, например apply, status или fees.', ph_ask:'напр. login, pay bill, jobs', go:'Перейти',
+    actions:'Основные действия', deeper:'Что-то не нашли? Искать глубже', deeper_sub:'(может занять минуту)',
+    reading:'Читаем сайт… {s} с (некоторым сайтам нужно 1–2 минуты, подождите).',
+    thinking:'Думаем…', no_actions:'Понятных действий не найдено. Попробуйте поле выше.',
+    back:'Назад', back_hint:'Назад к основным действиям', pages:'{n} страниц', search_label:'Искать «{q}»', search_hint:'Искать на этом сайте',
+    matched_ai:'Найдено с ИИ', matched_kw:'Найдено по словам', picked_ai:'(кнопки выбрал ИИ)',
+    err_side:'Что-то пошло не так на стороне TAP.com (код {c}). Ошибку смотрите в окне Terminal.',
+    err_reach:'Не удалось связаться с TAP.com или слишком долго. «python3 app.py» ещё работает в Terminal?',
+    err_generic:'Что-то пошло не так. Ошибку смотрите в окне Terminal.'},
+  ar: {h1:'استخدم أي موقع في', h1one:'', sub:'اكتب موقعاً، ثم اضغط زراً كبيراً أو قل ما تريد في 1–2 كلمات.',
+    label_site:'عنوان الموقع', ph_url:'مثل passportindia.gov.in', open:'افتح',
+    ask_h:'ماذا تريد أن تفعل؟', ask_p:'اكتب 1–2 كلمات، مثل apply أو status أو fees.', ph_ask:'مثل login، pay bill، jobs', go:'اذهب',
+    actions:'الإجراءات الرئيسية', deeper:'لم تجد شيئاً؟ ابحث أعمق', deeper_sub:'(قد يستغرق دقيقة)',
+    reading:'جارٍ قراءة الموقع… {s} ث (بعض المواقع تحتاج 1–2 دقيقة، يرجى الانتظار).',
+    thinking:'يفكر…', no_actions:'لم توجد إجراءات واضحة. جرّب المربع أعلاه.',
+    back:'رجوع', back_hint:'العودة إلى الإجراءات الرئيسية', pages:'{n} صفحات', search_label:'ابحث عن “{q}”', search_hint:'ابحث في هذا الموقع',
+    matched_ai:'تطابق بالذكاء الاصطناعي', matched_kw:'تطابق بالكلمات', picked_ai:'(الأزرار اختارها الذكاء الاصطناعي)',
+    err_side:'حدث خطأ في TAP.com (الرمز {c}). انظر الخطأ في نافذة Terminal.',
+    err_reach:'تعذّر الوصول إلى TAP.com أو استغرق وقتاً طويلاً. هل "python3 app.py" ما زال يعمل في Terminal؟',
+    err_generic:'حدث خطأ. انظر الخطأ في نافذة Terminal.'},
+  'zh-CN': {h1:'任何网站，一次', h1one:'', sub:'输入网站，点大按钮，或用1–2个词说出你想做什么。',
+    label_site:'网站地址', ph_url:'例如 passportindia.gov.in', open:'打开',
+    ask_h:'你想做什么？', ask_p:'输入1–2个词，如 apply、status 或 fees。', ph_ask:'例如 login、pay bill、jobs', go:'前往',
+    actions:'主要操作', deeper:'没找到？再深入看看', deeper_sub:'（最多需要一分钟）',
+    reading:'正在读取网站… {s} 秒（有些网站需要1–2分钟，请稍候）。',
+    thinking:'思考中…', no_actions:'没有找到明确的操作。请试试上面的输入框。',
+    back:'返回', back_hint:'返回主要操作', pages:'{n} 个页面', search_label:'搜索“{q}”', search_hint:'在此网站内搜索',
+    matched_ai:'AI匹配', matched_kw:'关键词匹配', picked_ai:'（按钮由AI选出）',
+    err_side:'TAP.com 出错了（代码 {c}）。请在终端窗口查看错误。',
+    err_reach:'无法连接 TAP.com 或耗时太长。"python3 app.py" 还在终端里运行吗？',
+    err_generic:'出错了。请在终端窗口查看错误。'},
+  ja: {h1:'どんなサイトでもワン', h1one:'', sub:'サイト名を入力して、大きなボタンを押すか、1〜2語でやりたいことを言ってください。',
+    label_site:'サイトのアドレス', ph_url:'例: passportindia.gov.in', open:'開く',
+    ask_h:'何をしたいですか？', ask_p:'1〜2語で入力（例: apply、status、fees）', ph_ask:'例: login、pay bill、jobs', go:'実行',
+    actions:'主な操作', deeper:'見つかりませんか？もっと探す', deeper_sub:'（最大1分かかります）',
+    reading:'サイトを読み込んでいます… {s} 秒（サイトによっては1〜2分かかります。お待ちください）',
+    thinking:'考え中…', no_actions:'明確な操作が見つかりません。上のボックスをお試しください。',
+    back:'戻る', back_hint:'主な操作に戻る', pages:'{n} ページ', search_label:'「{q}」を検索', search_hint:'このサイト内を検索',
+    matched_ai:'AIで一致', matched_kw:'キーワードで一致', picked_ai:'（ボタンはAIが選択）',
+    err_side:'TAP.com側でエラーが発生しました（コード {c}）。Terminalウィンドウでエラーを確認してください。',
+    err_reach:'TAP.comに接続できないか、時間がかかりすぎています。Terminalで「python3 app.py」は実行中ですか？',
+    err_generic:'エラーが発生しました。Terminalウィンドウで確認してください。'},
+  ko: {h1:'어떤 웹사이트든, 한 번', h1one:'', sub:'웹사이트를 입력하고 큰 버튼을 누르거나 1~2단어로 원하는 것을 말하세요.',
+    label_site:'웹사이트 주소', ph_url:'예: passportindia.gov.in', open:'열기',
+    ask_h:'무엇을 하고 싶으세요?', ask_p:'1~2단어로 입력하세요. 예: apply, status, fees', ph_ask:'예: login, pay bill, jobs', go:'이동',
+    actions:'주요 작업', deeper:'못 찾으셨나요? 더 깊이 찾기', deeper_sub:'(최대 1분 소요)',
+    reading:'웹사이트를 읽는 중… {s}초 (어떤 사이트는 1~2분 걸립니다. 잠시만 기다려 주세요)',
+    thinking:'생각 중…', no_actions:'명확한 작업을 찾지 못했습니다. 위 입력창을 이용해 보세요.',
+    back:'뒤로', back_hint:'주요 작업으로 돌아가기', pages:'{n}개 페이지', search_label:'“{q}” 검색', search_hint:'이 사이트에서 검색',
+    matched_ai:'AI로 찾음', matched_kw:'키워드로 찾음', picked_ai:'(버튼은 AI가 선택)',
+    err_side:'TAP.com 측에서 오류가 발생했습니다(코드 {c}). 터미널 창에서 오류를 확인하세요.',
+    err_reach:'TAP.com에 연결할 수 없거나 시간이 너무 오래 걸립니다. 터미널에서 "python3 app.py"가 실행 중인가요?',
+    err_generic:'오류가 발생했습니다. 터미널 창에서 확인하세요.'},
+};
+
+const lang = () => $('lang').value;
+const tr = (k, subs) => Object.entries(subs || {}).reduce(
+  (s, [p, v]) => s.replaceAll('{' + p + '}', v),
+  (I18N[lang()] || {})[k] ?? EN[k]);
+
+// Translate TAP's own interface. Unknown keys fall back to English, so a
+// missing translation can never break the page.
+function applyPageLang() {
+  document.documentElement.lang = lang() || 'en';
+  document.documentElement.dir = (lang() === 'ar' || lang() === 'ur') ? 'rtl' : 'ltr';
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = tr(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = tr(el.dataset.i18nPh); });
+}
+
+// Wrap a link in Google Translate when a language is picked. If the site cannot
+// be translated, Google's page offers the original — and 'Original' always works.
+function translated(url) {
+  const lang = $('lang').value;
+  if (!lang || !/^https?:/i.test(url)) return url;
+  return `https://translate.google.com/translate?sl=auto&tl=${lang}&u=${encodeURIComponent(url)}`;
+}
+
+function bigButton(b, compact = false) {
+  const a = document.createElement('a');
+  a.className = compact ? 'action-card compact' : 'action-card';
+  a.href = translated(b.url); a.target = '_blank'; a.rel = 'noopener';
+  a.title = b.hint || b.url;
+  a.innerHTML = '<span class="action-symbol"></span><span class="action-label"><span></span></span>';
+  a.firstChild.textContent = b.icon || '➡️';
+  a.lastChild.firstChild.textContent = b.label;
+  if (b.small) { const s = document.createElement('small'); s.textContent = b.small; a.lastChild.appendChild(s); }
+  return a;
+}
+
+// Priority buttons: a button with 4+ pages shows its pages; otherwise it opens the page directly.
+function priorityButton(b) {
+  const many = b.pages && b.pages.length >= 4;
+  const a = bigButton(many ? {...b, small: tr('pages', {n: b.pages.length})} : b);
+  if (many) a.onclick = e => { e.preventDefault(); showPages(b); };
+  return a;
+}
+
+function showButtons(list) {
+  $('buttons').innerHTML = '';
+  if (!list.length) $('buttons').textContent = tr('no_actions');
+  list.forEach(b => $('buttons').appendChild(priorityButton(b)));
+}
+
+function showPages(b) {
+  $('buttons').innerHTML = '';
+  const back = bigButton({label: tr('back'), icon: '⬅️', url: '#', hint: tr('back_hint'), small: b.label});
+  back.removeAttribute('target');
+  back.onclick = e => { e.preventDefault(); showButtons(site.buttons); };
+  $('buttons').appendChild(back);
+  b.pages.forEach(p => $('buttons').appendChild(bigButton({label: p.label, icon: b.icon, url: p.url, hint: p.hint})));
+}
+
+async function loadSite(url, deep = false) {
+  $('error').textContent = ''; $('deeper').classList.add('hidden');$('panel').classList.remove('hidden'); $('results').innerHTML = '';$('source').textContent = '';
+  const started = Date.now();
+  const say = () => $('buttons').textContent =
+    tr('reading', {s: Math.round((Date.now() - started) / 1000)});
+  say(); const timer = setInterval(say, 1000);
+  let r, data;
+  try {
+    r = await fetch('/api/analyze', {method:'POST', headers:{'Content-Type':'application/json'},
+                                   body: JSON.stringify({url, deep}), signal: AbortSignal.timeout(240000)});
+    data = await r.json();
+  } catch (e) {
+    data = {error: r ? tr('err_side', {c: r.status}) : tr('err_reach')};
+    r = {ok: false};
+  } finally { clearInterval(timer); }
+  if (!r.ok) { $('panel').classList.add('hidden');$('error').textContent = data.error; return; }
+  site = data;
+  $('siteTitle').textContent = `${data.title} — ${data.url}` + (data.ai ? '  ' + tr('picked_ai') : '') + (data.ai_note ? '  — ' + data.ai_note : '');
+  showButtons(data.buttons);
+  if (data.can_deep) $('deeper').classList.remove('hidden');$('ask').focus();
+}
+
+async function ask(query) {
+  if (!site || !query.trim()) return;
+  $('results').innerHTML = tr('thinking');
+  const r = await fetch('/api/ask', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({query, links: site.links, url: site.url, search_form: site.search_form})});
+  let data;
+  try { data = await r.json(); } catch (e) { $('results').textContent = tr('err_generic'); return; }
+  $('results').innerHTML = '';
+  data.results.forEach((b, i) => $('results').appendChild(
+    bigButton({...b, icon: i === data.results.length - 1 ? '🔍' : '👉', small: b.hint}, true)));
+  $('source').textContent = (data.source === 'ai' ? tr('matched_ai') : tr('matched_kw')) + (data.ai_note ? ' — ' + data.ai_note : '');
+}
+
+$('lang').onchange = () => {
+  applyPageLang();                        // translate TAP itself
+  if (site) showButtons(site.buttons);    // rebuild links in the new language
+};
+$('deeper').onclick = () => loadSite(site.url, true);
+$('siteForm').onsubmit = e => { e.preventDefault(); loadSite($('url').value); };
+$('askForm').onsubmit  = e => { e.preventDefault(); ask($('ask').value); };
+// Shareable link: /?site=example.com opens straight into the simple view.
+const preset = new URLSearchParams(location.search).get('site');
+if (preset) { $('url').value = preset; loadSite(preset); }
+document.querySelectorAll('.chip').forEach(c =>
+  c.onclick = () => { $('url').value = c.dataset.url; loadSite(c.dataset.url); });
+</script>
+</body>
+</html>

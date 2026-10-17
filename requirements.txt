@@ -1,0 +1,7 @@
+flask>=3.0
+requests>=2.31
+beautifulsoup4>=4.12
+# optional, for JavaScript-heavy sites (then run: python -m playwright install chromium)
+playwright>=1.44
+# optional, only for running the regression tests
+pytest>=8.0
