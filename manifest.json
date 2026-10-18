@@ -1,0 +1,26 @@
+{
+    "name": "Extension",
+    "description": "A Easy to use Extension for People who want to find important information in a complex data. It gives simple buttons and UI Navigation with AI APIs",
+    "version": "1.0",
+    "icons": {
+        "128": "images/icon-128.png"
+    },
+    "manifest_version": 3,
+    "action": {
+        "default_popup": "popup/popup.html",
+        "default_icon": {
+            "128": "images/icon-128.png"
+        }
+    },
+    "background": {
+        "service_worker": "background.js"
+    },
+    "permissions": [
+        "activeTab",
+        "scripting",
+        "storage"
+    ],
+    "host_permissions": [
+        "https://ai.hackclub.com/*"
+    ]
+}

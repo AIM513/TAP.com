@@ -1,0 +1,403 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ================== */
+/* ===   Root Variables    === */
+/* ================== */
+:root {
+    --mobile-breakpoint: 768px;
+    /* I am writing it here, but the variable was never reused as that requires postcss */
+
+    --radius: 0.625rem;
+
+    --width: 3em;
+
+    --page-transition-duration: 800ms;
+    --page-transition-color: #fff;
+
+    --background: #eef5ef;
+    --foreground: #17231f;
+
+    --card: #fbfdf9e0;
+    --card-foreground: #17231f;
+
+    --popover: #fbfdf9e0;
+    --popover-foreground: #17231f;
+
+    --primary: #176044;
+    --primary-foreground: #fff;
+
+    --secondary: #f4f8f3;
+    --secondary-foreground: #0c3928;
+
+    --muted: #f0f8f1;
+    --muted-foreground: #66736d;
+
+    --red: oklch(63.681% 0.20784 25.315);
+    --yellow: oklch(79.524% 0.1616 86.05);
+    --green: oklch(72.276% 0.19199 149.6);
+    --blue: oklch(65.832% 0.1756 254.828);
+    --gray: oklch(71.068% 0.0352 256.828);
+
+    --gold: oklch(76.9% 0.188 70.08);
+    --silver: oklch(80% 0 0);
+    --bronze: oklch(66.61% 0.1315 61.29);
+
+    --accent: #d9f1e4;
+    --accent-foreground: #0c3928;
+
+    --accent-something: oklch(60.273% 0.14322 154.272);
+
+    --destructive: #af3e3e;
+
+    --border: #dfe8e2;
+    --ring: #4d9b79;
+
+    --chart-1: oklch(0.646 0.222 41.116);
+    --chart-2: oklch(0.6 0.118 184.704);
+    --chart-3: oklch(0.398 0.07 227.392);
+    --chart-4: oklch(0.828 0.189 84.429);
+    --chart-5: oklch(0.769 0.188 70.08);
+
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.145 0 0);
+    --sidebar-primary: oklch(0.205 0 0);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-border: oklch(0.922 0 0);
+    --sidebar-ring: oklch(0.708 0 0);
+
+    --table-accent: oklch(0.97 0 0);
+    --table-accent-foreground: oklch(0.205 0 0);
+    --table-border: oklch(0.922 0 0);
+
+    --input: #fff;
+    --input-accent: #4d9b79;
+    --input-foreground: #17231f;
+    --input-border: #dfe8e2;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+
+        --background: oklch(0.145 0 0);
+        --foreground: oklch(0.985 0 0);
+
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+
+        --popover: oklch(0.269 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+
+        --secondary: oklch(0.269 0 0);
+        --secondary-foreground: oklch(0.985 0 0);
+
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+
+        --accent: oklch(37.703% 0.06991 163.448);
+        --accent-foreground: oklch(95.75% 0.06688 141.194);
+
+        --destructive: oklch(0.704 0.191 22.216);
+
+        --border: oklch(1 0 0 / 10%);
+        --ring: oklch(0.556 0 0);
+
+        --chart-1: oklch(0.488 0.243 264.376);
+        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+
+        --sidebar: oklch(0.205 0 0);
+        --sidebar-foreground: oklch(0.985 0 0);
+        --sidebar-primary: oklch(0.488 0.243 264.376);
+        --sidebar-primary-foreground: oklch(0.985 0 0);
+        --sidebar-accent: oklch(0.269 0 0);
+        --sidebar-accent-foreground: oklch(0.985 0 0);
+        --sidebar-border: oklch(1 0 0 / 10%);
+        --sidebar-ring: oklch(0.439 0 0);
+
+        --table-accent: oklch(0.269 0 0);
+        --table-accent-foreground: oklch(0.985 0 0);
+        --table-border: oklch(1 0 0 / 10%);
+
+        --input: oklch(1 0 0 / 15%);
+        --input-accent: oklch(0.269 0 0);
+        --input-foreground: oklch(0.985 0 0);
+        --input-border: oklch(1 0 0 / 10%);
+    }
+}
+
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    width: 30em;
+    aspect-ratio: 2/3;
+    padding: 1em;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: "Inter";
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+
+h1 {
+    font-size: 1.5em;
+    text-transform: uppercase;
+    position: relative;
+    text-align: center;
+}
+
+h1::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -0.5em;
+    transform: translateX(-50%);
+    width: var(--width);
+    height: 2px;
+    background: #fff;
+}
+
+.inputBox {
+    position: relative;
+    width: 100%;
+    padding-bottom: 1em;
+    display: flex;
+    flex-direction: row;
+}
+
+.inputBox input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid var(--input-border);
+    border-top-right-radius: 0px !important;
+    border-bottom-right-radius: 0 !important;
+    background: var(--input);
+    border-radius: 5px;
+    outline: none;
+    color: var(--input-foreground);
+    font-size: 1em;
+    transition: 0.5s;
+}
+
+.inputBox label {
+    position: absolute;
+    left: 0;
+    padding: 10px;
+    pointer-events: none;
+    font-size: 1em;
+    color: var(--foreground);
+    text-transform: uppercase;
+    transition: 0.5s;
+}
+
+.inputBox input[type="text"]:valid~label {
+    color: var(--foreground);
+    transform: translateX(10px) translateY(-7px);
+    font-size: 0.65em;
+    padding: 0 10px;
+    background: var(--background);
+    ;
+    border: 2px solid var(--input-foreground);
+    border-radius: 1em;
+}
+
+.inputBox input[type="text"]:focus~label {
+    color: var(--foreground);
+    transform: translateX(10px) translateY(-7px);
+    font-size: 0.65em;
+    padding: 0 10px;
+    background: var(--background);
+    ;
+    border: 2px solid var(--input-accent);
+    border-radius: 1em;
+}
+
+.inputBox input[type="text"]:focus {
+    border: 2px solid var(--input-accent);
+
+}
+
+.inputBox input[type="text"]:valid {
+    border: 2px solid var(--input-foreground);
+}
+
+.inputBox button {
+    width: 3em;
+    padding: 5px;
+    border: 2px solid var(--input-border);
+    border-left: none;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    background: var(--input);
+    border-radius: 5px;
+    outline: none;
+    color: var(--input-foreground);
+    font-size: 1.5em;
+    transition: 0.5s;
+}
+
+.inputBox button:active {
+    border: 2px solid var(--input-foreground);
+}
+
+.api-key-box {
+    width: 100%;
+    margin-bottom: 1em;
+    color: var(--muted-foreground);
+    font-size: 0.75em;
+}
+
+.api-key-box input {
+    width: 100%;
+    margin-top: 0.4em;
+    padding: 0.5em;
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius);
+    background: var(--input);
+    color: var(--input-foreground);
+}
+
+.api-key-box select {
+    width: 100%;
+    margin-top: 0.4em;
+    padding: 0.5em;
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius);
+    background: var(--input);
+    color: var(--input-foreground);
+}
+
+section {
+    width: 100%;
+}
+
+/* === Card === */
+.card-container {
+    padding-top: 1.5em;
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1em;
+}
+
+.card {
+    flex: 1 1 14em;
+    min-width: min(100%, 14em);
+    min-height: 8em;
+    padding: 1em;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card);
+    color: var(--card-foreground);
+}
+
+.card[role="link"] {
+    cursor: pointer;
+}
+
+.card[role="link"]:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+}
+
+.card-loading {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75em;
+}
+
+.loading-line {
+    display: block;
+    height: 0.75em;
+    border-radius: 999px;
+    background: var(--muted);
+    animation: card-loading 1.2s ease-in-out infinite;
+}
+
+.loading-icon {
+    width: 2em;
+    height: 2em;
+}
+
+.loading-title {
+    width: 75%;
+}
+
+.loading-description {
+    width: 100%;
+}
+
+.loading-description.short {
+    width: 60%;
+}
+
+@keyframes card-loading {
+
+    0%,
+    100% {
+        opacity: 0.45;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+.card-icon {
+    display: block;
+    margin-bottom: 0.5em;
+    font-size: 1.5em;
+}
+
+.card-title {
+    font-size: 1em;
+}
+
+.card-priority {
+    display: inline-block;
+    margin-top: 0.35em;
+    color: var(--primary);
+    font-size: 0.75em;
+    font-weight: 600;
+}
+
+.card-description {
+    margin-top: 0.5em;
+    color: var(--muted-foreground);
+    font-size: 0.8em;
+}
+
+.card-link {
+    display: inline-block;
+    margin-top: 1em;
+    color: var(--primary);
+}
+
+.run-output {
+    max-height: 8em;
+    margin-top: 1em;
+    overflow: auto;
+    white-space: pre-wrap;
+    color: var(--muted-foreground);
+    font-size: 0.7em;
+}
+
+#status-message {
+    font-size: 0.75em;
+}
+
+#status-message[data-error="true"] {
+    color: var(--destructive);
+}

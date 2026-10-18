@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>Not Needed so who cares</title>
+    <link
+      rel="stylesheet"
+      href="popup.css"
+    />
+  </head>
+  <body>
+    <form
+      class="inputBox"
+      id="search-form"
+    >
+      <input
+        type="text"
+        id="search-input"
+        placeholder="Search specific..."
+      />
+      <button
+        type="submit"
+        aria-label="Search"
+      >
+        🔎
+      </button>
+    </form>
+
+    <label
+      class="api-key-box"
+      id="hackclub-api-key-box"
+    >
+      Hack Club API key
+      <input
+        type="password"
+        id="hackclub-api-key"
+        autocomplete="off"
+        placeholder="Stored locally"
+      />
+    </label>
+    <p
+      id="status-message"
+      role="status"
+    ></p>
+
+    <section>
+      <h1>Links I found helpful</h1>
+      <div
+        class="card-container"
+        id="card-container"
+      ></div>
+      <pre
+        id="run-output"
+        class="run-output"
+      ></pre>
+    </section>
+  </body>
+
+  <script src="popup.js"></script>
+</html>
